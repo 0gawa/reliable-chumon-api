@@ -3,7 +3,7 @@
 [![Ruby](https://img.shields.io/badge/Ruby-3.2.2-red.svg)](https://www.ruby-lang.org/)
 [![Rails](https://img.shields.io/badge/Rails-7.2.3-red.svg)](https://rubyonrails.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-[![RSpec](https://img.shields.io/badge/Tests-124%20passing-green.svg)](https://rspec.info/)
+[![RSpec](https://img.shields.io/badge/Tests-135%20passing-green.svg)](https://rspec.info/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A production-ready REST API for managing restaurant orders, designed to provide reliable financial data for external payment systems and POS terminals. This system focuses on order lifecycle management and accurate price calculations without handling payment processing itself.
@@ -23,6 +23,8 @@ A production-ready REST API for managing restaurant orders, designed to provide 
 
 ### Analytics & Reporting
 - **Daily Aggregation**: Automated sales statistics per menu item
+- **Background Processing**: Sidekiq-powered async job execution for heavy aggregation tasks
+- **Scheduled Jobs**: Daily automated stats calculation at midnight using sidekiq-cron
 - **SQL-Optimized**: High-performance aggregation using PostgreSQL's GROUP BY and bulk upsert
 - **Analytics API**: RESTful endpoints for sales data and summaries
 - **Date Range Queries**: Flexible date filtering with smart defaults
@@ -44,7 +46,9 @@ A production-ready REST API for managing restaurant orders, designed to provide 
 ### Tech Stack
 - **Backend**: Ruby on Rails 7.2 (API mode)
 - **Database**: PostgreSQL 16
-- **Testing**: RSpec with 124 examples, 100% passing
+- **Background Jobs**: Sidekiq with Redis
+- **Job Scheduling**: sidekiq-cron for recurring tasks
+- **Testing**: RSpec with 135 examples, 100% passing
 - **Containerization**: Docker & Docker Compose
 
 ## 📋 Prerequisites
@@ -72,12 +76,15 @@ docker-compose run --rm web rails db:create db:migrate
 docker-compose run --rm web rails db:seed
 ```
 
-### 3. Start Server
+### 3. Start Services
 ```bash
 docker-compose up
 ```
 
-Server runs on `http://localhost:3000`
+Services:
+- **Web Server**: `http://localhost:3000`
+- **Redis**: `localhost:6379`
+- **Sidekiq**: Background job processor (auto-starts)
 
 ### 4. Run Tests
 ```bash
@@ -231,12 +238,21 @@ docker-compose exec web rspec --format documentation
 ## 💡 Usage Examples
 
 ### Daily Sales Aggregation
-```bash
-# Run aggregation for a specific date
-docker-compose exec web rails runner "DailyStatsAggregator.new(Date.new(2026, 2, 1)).aggregate"
 
-# Run for today
-docker-compose exec web rails runner "DailyStatsAggregator.new.aggregate"
+**Automatic (Scheduled)**:
+- Runs automatically every day at midnight via Sidekiq cron
+- No manual intervention required
+
+**Manual Execution**:
+```bash
+# Enqueue background job for a specific date
+docker-compose exec web rails runner "DailyStatsAggregatorJob.perform_later('2026-02-01')"
+
+# Enqueue for today
+docker-compose exec web rails runner "DailyStatsAggregatorJob.perform_later(Date.current.to_s)"
+
+# Run synchronously (for testing)
+docker-compose exec web rails runner "DailyStatsAggregator.new(Date.new(2026, 2, 1)).aggregate"
 ```
 
 ### Database Console

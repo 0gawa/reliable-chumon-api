@@ -72,6 +72,23 @@ RSpec.configure do |config|
 
   # FactoryBotの設定
   config.include FactoryBot::Syntax::Methods
+
+  # CI環境や通常の実行時に時間のかかるテストをスキップ
+  config.filter_run_excluding :skip_in_ci
+
+  # Active Jobのテスト設定
+  config.include ActiveJob::TestHelper
+  config.before(:suite) do
+    ActiveJob::Base.queue_adapter = :test
+  end
+  config.before(:each) do
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
+  config.after(:each) do
+    clear_enqueued_jobs
+    clear_performed_jobs
+  end
 end
 
 # Require shoulda-matchers
