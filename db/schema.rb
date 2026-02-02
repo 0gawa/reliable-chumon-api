@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_02_103239) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_02_131901) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "menu_daily_stats", force: :cascade do |t|
+    t.bigint "menu_id", null: false
+    t.date "aggregation_date", null: false
+    t.integer "total_quantity", default: 0, null: false
+    t.integer "total_sales_amount", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aggregation_date"], name: "index_menu_daily_stats_on_aggregation_date"
+    t.index ["menu_id", "aggregation_date"], name: "index_menu_daily_stats_on_menu_id_and_aggregation_date", unique: true
+    t.index ["menu_id"], name: "index_menu_daily_stats_on_menu_id"
+  end
 
   create_table "menus", force: :cascade do |t|
     t.string "name", null: false
@@ -51,5 +63,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_02_103239) do
     t.index ["table_number"], name: "index_orders_on_table_number"
   end
 
+  add_foreign_key "menu_daily_stats", "menus"
   add_foreign_key "order_items", "orders"
 end
