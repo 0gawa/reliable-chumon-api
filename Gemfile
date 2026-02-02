@@ -22,7 +22,7 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "bootsnap", require: false
 
 # Fix for CGI compatibility issue with globalid
-gem "cgi", "~> 0.4.1"
+gem "cgi", "~> 0.5.1"
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 # gem "rack-cors"
