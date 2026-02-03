@@ -1,5 +1,5 @@
 class Api::V1::Admin::OrdersController < ApplicationController
-  before_action :set_order, only: [:show, :update_status]
+  before_action :set_order, only: [ :show, :update_status ]
 
   def index
     orders = Order.includes(:order_items).order(ordered_at: :desc)
