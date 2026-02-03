@@ -60,7 +60,8 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json).to have_key('errors')
+        expect(json['error']). to have_key('code')
+        expect(json['error']['code']).to eq('VALIDATION_ERROR')
       end
     end
   end

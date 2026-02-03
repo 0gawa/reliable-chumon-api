@@ -6,15 +6,13 @@ class Api::V1::Customer::OrdersController < ApplicationController
     if creator.success?
       render_order_success(order, creator.duplicate?)
     else
-      render_order_error(creator)
+      render_order_errors(creator)
     end
   end
 
   def summary
-    @order = Order.includes(:order_items).find(params[:id])
-    render json: @order.as_json(include: { order_items: {} })
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: "注文が見つかりません" }, status: :not_found
+    order = Order.includes(:order_items).find(params[:id])
+    render json: order.as_json(include: { order_items: {} })
   end
 
   private
@@ -24,8 +22,12 @@ class Api::V1::Customer::OrdersController < ApplicationController
       table_number: order_params[:table_number],
       items: order_params[:items],
       order_type: order_params[:order_type] || "dine_in",
-      idempotency_key: request.headers["X-Idempotency-Key"]
+      idempotency_key: idempotency_key_from_header
     )
+  end
+
+  def idempotency_key_from_header
+    request.headers["X-Idempotency-Key"]
   end
 
   def render_order_success(order, duplicate)
@@ -33,20 +35,28 @@ class Api::V1::Customer::OrdersController < ApplicationController
     render json: order.as_json(include: { order_items: {} }), status: status
   end
 
-  def render_order_error(creator)
-    status = error_status_for(creator)
-    render json: { errors: creator.errors }, status: status
+  def render_order_errors(creator)
+    if deadlock_detected?(creator)
+      render_deadlock
+    else
+      render_validation_errors(creator)
+    end
   end
 
-  def error_status_for(creator)
-    deadlock_detected?(creator) ? :conflict : :unprocessable_entity
+  def render_validation_errors(creator)
+    render_custom_error(
+      status: :unprocessable_entity,
+      code: ErrorCode::VALIDATION_ERROR,
+      message: "Order creation failed",
+      details: { errors: creator.errors }
+    )
   end
 
   def deadlock_detected?(creator)
-    creator.errors.any? { |err| err.include?("deadlock") }
+    creator.errors.any? { |error| error.include?("deadlock") }
   end
 
   def order_params
-    params.require(:order).permit(:table_number, :order_type, items: [ :menu_id, :quantity ])
+    params.require(:order).permit(:table_number, :order_type, items: [:menu_id, :quantity])
   end
 end

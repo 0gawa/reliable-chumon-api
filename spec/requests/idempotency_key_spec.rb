@@ -87,7 +87,7 @@ RSpec.describe '冪等性キー (Idempotency Key)', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
-        expect(json_response['errors']).to be_present
+ expect(json_response['error']['code']).to eq('VALIDATION_ERROR')
       end
     end
   end

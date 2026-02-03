@@ -67,7 +67,8 @@ RSpec.describe 'Api::V1::Customer::Menus', type: :request do
 
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('メニューが見つかりません')
+        expect(json['error']['code']).to eq('NOT_FOUND')
+        expect(json['error']['status']).to eq(404)
       end
 
       it '販売不可メニューの詳細取得で404エラーが返されること' do
@@ -77,7 +78,8 @@ RSpec.describe 'Api::V1::Customer::Menus', type: :request do
 
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('メニューが見つかりません')
+        expect(json['error']['code']).to eq('NOT_FOUND')
+        expect(json['error']['status']).to eq(404)
       end
     end
   end

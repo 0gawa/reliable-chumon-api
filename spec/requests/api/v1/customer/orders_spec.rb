@@ -136,7 +136,8 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['errors'].first).to include('現在注文できません')
+        expect(json['error']['code']).to eq('VALIDATION_ERROR')
+        expect(json['error']['details']['errors'].first).to include('現在注文できません')
       end
     end
 
@@ -187,7 +188,8 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['errors']).not_to be_empty
+        expect(json['error']['code']).to eq('VALIDATION_ERROR')
+        expect(json['error']['details']['errors']).not_to be_empty
       end
     end
 
@@ -238,7 +240,8 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['errors']).to include('注文アイテムが指定されていません')
+        expect(json['error']['code']).to eq('VALIDATION_ERROR')
+        expect(json['error']['details']['errors']).to include('注文アイテムが指定されていません')
       end
     end
 
@@ -286,7 +289,8 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
 
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('注文が見つかりません')
+        expect(json['error']['code']).to eq('NOT_FOUND')
+        expect(json['error']['status']).to eq(404)
       end
     end
   end

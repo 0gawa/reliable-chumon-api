@@ -20,8 +20,8 @@ RSpec.describe '楽観的ロック (Optimistic Locking)', type: :request do
 
       expect(response).to have_http_status(:conflict)
       json_response = JSON.parse(response.body)
-      expect(json_response['code']).to eq('stale_object')
-      expect(json_response['error']).to include('modified by another request')
+      expect(json_response['error']['code']).to eq('STALE_OBJECT')
+      expect(json_response['error']['message']).to include('modified by another request')
 
       menu.reload
       expect(menu.name).to eq('Updated by Another Request')
