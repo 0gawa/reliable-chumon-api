@@ -44,7 +44,9 @@ module Orders
         menu_id = item_data[:menu_id]
         
         begin
-          menu = Menu.find(menu_id)
+          # 悲観的ロック: トランザクション中のデータ整合性を保証
+          # 将来の在庫管理機能で重要になる
+          menu = Menu.lock.find(menu_id)
           validate_menu_availability!(menu)
           @menus_cache[menu_id] = menu
         rescue ActiveRecord::RecordNotFound

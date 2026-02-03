@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_02_02_131901) do
+ActiveRecord::Schema[7.2].define(version: 2026_02_02_235652) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -34,6 +34,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_02_131901) do
     t.string "category"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
     t.index ["category"], name: "index_menus_on_category"
     t.index ["is_available"], name: "index_menus_on_is_available"
   end
@@ -57,6 +58,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_02_02_131901) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "order_type", default: 0, null: false
+    t.string "idempotency_key", limit: 255
+    t.index ["idempotency_key"], name: "index_orders_on_idempotency_key_not_null", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["order_type"], name: "index_orders_on_order_type"
     t.index ["ordered_at"], name: "index_orders_on_ordered_at"
     t.index ["status"], name: "index_orders_on_status"

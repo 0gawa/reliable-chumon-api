@@ -33,6 +33,12 @@ module Api
           else
             render json: { errors: @menu.errors.full_messages }, status: :unprocessable_entity
           end
+        rescue ActiveRecord::StaleObjectError
+          # 楽観的ロック: 他のリクエストによって既に更新されている
+          render json: { 
+            error: 'Menu was modified by another request', 
+            code: 'stale_object' 
+          }, status: :conflict
         end
 
         # DELETE /api/v1/admin/menus/:id

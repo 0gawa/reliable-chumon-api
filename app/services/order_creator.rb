@@ -1,25 +1,45 @@
 class OrderCreator
   attr_reader :order, :errors
 
-  def initialize(table_number:, items:, order_type: 'dine_in')
+  def initialize(table_number:, items:, order_type: 'dine_in', idempotency_key: nil)
     @table_number = table_number
     @items = items
     @order_type = order_type
+    @idempotency_key = idempotency_key
     @errors = []
     @menus_cache = {}
+    @is_duplicate = false
   end
 
   def call
+    # 冪等性チェック: 既存の注文がある場合はそれを返す
+    if @idempotency_key.present?
+      existing_order = Order.find_by(idempotency_key: @idempotency_key)
+      if existing_order
+        @order = existing_order
+        @is_duplicate = true
+        return @order
+      end
+    end
+
     ActiveRecord::Base.transaction do
       create_order
     end
   rescue ActiveRecord::RecordInvalid => e
     # Errors are already set by the validator, don't overwrite them
     nil
+  rescue ActiveRecord::Deadlocked => e
+    # デッドロック時のエラーメッセージを設定
+    @errors << 'Transaction deadlock detected. Please retry your request.'
+    nil
   end
 
   def success?
     @errors.empty? && @order&.persisted?
+  end
+
+  def duplicate?
+    @is_duplicate
   end
 
   private
@@ -48,7 +68,8 @@ class OrderCreator
       total_amount: calculator.total_amount,
       tax_amount: calculator.tax_amount,
       status: 'pending',
-      ordered_at: Time.current
+      ordered_at: Time.current,
+      idempotency_key: @idempotency_key
     )
     
     build_order_items(calculator)
