@@ -1,0 +1,12 @@
+:concurrency: 5
+:queues:
+  - default
+  - mailers
+  - low_priority
+
+:schedule:
+  daily_stats_aggregation:
+    cron: '0 0 * * *'  # 毎日0時に実行
+    class: DailyStatsAggregatorJob
+    queue: default
+    description: '日次メニュー販売統計を集計'

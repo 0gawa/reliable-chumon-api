@@ -21,7 +21,7 @@ RSpec.describe OrderItem, type: :model do
 
   describe 'スナップショットヘルパーメソッド' do
     let(:order_item) do
-      create(:order_item, 
+      create(:order_item,
         menu_snapshot: {
           'id' => 1,
           'name' => 'ハンバーグ',

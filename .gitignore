@@ -34,3 +34,7 @@
 
 .agent/
 /context/
+/docs/
+
+# Antigravity artifacts (AI assistant working directory)
+.gemini/

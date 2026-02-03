@@ -14,16 +14,16 @@ RSpec.describe Order, type: :model do
     it { should validate_presence_of(:ordered_at) }
     it { should validate_presence_of(:order_type) }
   end
-  
+
   describe 'Enum' do
     it 'order_typeのenumが正しく定義されていること' do
       expect(Order.order_types).to eq({ 'dine_in' => 0, 'takeout' => 1, 'delivery' => 2 })
     end
-    
+
     it 'enum経由でorder_typeを設定できること' do
       order = build(:order)
       expect(order.dine_in?).to be true
-      
+
       order.order_type = :takeout
       expect(order.takeout?).to be true
       expect(order.order_type).to eq('takeout')
@@ -40,7 +40,7 @@ RSpec.describe Order, type: :model do
       expect(order).to be_valid
       expect(order.order_type).to eq('dine_in')  # デフォルト値
     end
-    
+
     it 'traitsが正しく動作すること' do
       expect(build(:order, :confirmed).status).to eq('confirmed')
       expect(build(:order, :completed).status).to eq('completed')

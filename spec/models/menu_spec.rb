@@ -21,7 +21,7 @@ RSpec.describe Menu, type: :model do
       it '販売可能なメニューのみを返すこと' do
         available_menu = create(:menu, is_available: true)
         unavailable_menu = create(:menu, is_available: false)
-        
+
         expect(Menu.available).to include(available_menu)
         expect(Menu.available).not_to include(unavailable_menu)
       end
@@ -31,7 +31,7 @@ RSpec.describe Menu, type: :model do
       it '指定したカテゴリのメニューのみを返すこと' do
         main_menu = create(:menu, category: 'メイン')
         dessert_menu = create(:menu, category: 'デザート')
-        
+
         expect(Menu.by_category('メイン')).to include(main_menu)
         expect(Menu.by_category('メイン')).not_to include(dessert_menu)
       end

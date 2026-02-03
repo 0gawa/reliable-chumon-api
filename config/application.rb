@@ -43,6 +43,9 @@ module App
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
+    # Enable Rack::Attack middleware for rate limiting
+    config.middleware.use Rack::Attack
+
     # Disable Host Authorization for API-only application
     config.hosts.clear
   end

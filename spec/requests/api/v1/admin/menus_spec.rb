@@ -4,9 +4,9 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
   describe 'GET /api/v1/admin/menus' do
     it 'メニュー一覧を取得できること' do
       menus = create_list(:menu, 3)
-      
+
       get '/api/v1/admin/menus', as: :json
-      
+
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
       expect(json.size).to be >= 3
@@ -22,7 +22,7 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
 
     it 'メニュー詳細を取得できること' do
       get "/api/v1/admin/menus/#{menu.id}", as: :json
-      
+
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
       expect(json['id']).to eq(menu.id)
@@ -40,7 +40,7 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
         expect {
           post '/api/v1/admin/menus', params: valid_params, as: :json
         }.to change(Menu, :count).by(1)
-        
+
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
         expect(json['name']).to eq('ハンバーグ')
@@ -57,7 +57,7 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
         expect {
           post '/api/v1/admin/menus', params: invalid_params, as: :json
         }.not_to change(Menu, :count)
-        
+
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
         expect(json).to have_key('errors')
@@ -71,14 +71,14 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
     context '有効なパラメータの場合' do
       it 'メニューが更新されること' do
         patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { name: '新しい名前' } }, as: :json
-        
+
         expect(response).to have_http_status(:ok)
         expect(menu.reload.name).to eq('新しい名前')
       end
 
       it 'is_availableフラグを切り替えられること' do
         patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { is_available: false } }, as: :json
-        
+
         expect(response).to have_http_status(:ok)
         expect(menu.reload.is_available).to be false
       end
@@ -87,7 +87,7 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
     context '無効なパラメータの場合' do
       it 'メニューが更新されないこと' do
         patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { price: -100 } }, as: :json
-        
+
         expect(response).to have_http_status(:unprocessable_entity)
       end
     end
@@ -100,7 +100,7 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
       expect {
         delete "/api/v1/admin/menus/#{menu.id}", as: :json
       }.to change(Menu, :count).by(-1)
-      
+
       expect(response).to have_http_status(:no_content)
     end
   end

@@ -6,8 +6,17 @@ gem "rails", "~> 7.2.3"
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
+# Rack middleware for rate limiting
+gem "rack-attack"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
+
+# Use Redis adapter to run Action Cable in production
+gem "redis", "~> 5.0"
+
+# Background job processing
+gem "sidekiq", "~> 7.0"
+gem "sidekiq-cron", "~> 1.12"
 
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
 # gem "kredis"
@@ -52,5 +61,3 @@ end
 group :development do
   gem "annotate"
 end
-
-
