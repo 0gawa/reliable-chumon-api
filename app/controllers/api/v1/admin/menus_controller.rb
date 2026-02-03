@@ -2,7 +2,7 @@ module Api
   module V1
     module Admin
       class MenusController < ApplicationController
-        before_action :set_menu, only: [:show, :update, :destroy]
+        before_action :set_menu, only: [ :show, :update, :destroy ]
 
         def index
           menus = Menu.all

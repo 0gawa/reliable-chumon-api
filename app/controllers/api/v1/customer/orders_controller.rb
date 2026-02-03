@@ -57,6 +57,6 @@ class Api::V1::Customer::OrdersController < ApplicationController
   end
 
   def order_params
-    params.require(:order).permit(:table_number, :order_type, items: [:menu_id, :quantity])
+    params.require(:order).permit(:table_number, :order_type, items: [ :menu_id, :quantity ])
   end
 end
