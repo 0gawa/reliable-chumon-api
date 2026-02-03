@@ -20,6 +20,7 @@ RSpec.describe 'Api::V1::Customer::Menus', type: :request do
       end
       
       it '空配列が返されること（販売可能なメニューがない場合）' do
+        Menu.where(is_available: true).delete_all
         create_list(:menu, 3, is_available: false)
         
         get '/api/v1/customer/menus', as: :json
