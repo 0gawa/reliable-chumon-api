@@ -12,25 +12,15 @@ class OrderCreator
   end
 
   def call
-    # 冪等性チェック: 既存の注文がある場合はそれを返す
-    if @idempotency_key.present?
-      existing_order = Order.find_by(idempotency_key: @idempotency_key)
-      if existing_order
-        @order = existing_order
-        @is_duplicate = true
-        return @order
-      end
-    end
-
+    return handle_duplicate if duplicate_order_exists?
+    
     ActiveRecord::Base.transaction do
       create_order
     end
-  rescue ActiveRecord::RecordInvalid => e
-    # Errors are already set by the validator, don't overwrite them
+  rescue ActiveRecord::RecordInvalid
     nil
-  rescue ActiveRecord::Deadlocked => e
-    # デッドロック時のエラーメッセージを設定
-    @errors << 'Transaction deadlock detected. Please retry your request.'
+  rescue ActiveRecord::Deadlocked
+    handle_deadlock
     nil
   end
 
@@ -44,22 +34,49 @@ class OrderCreator
 
   private
 
+  def duplicate_order_exists?
+    @idempotency_key.present? && existing_order
+  end
+
+  def existing_order
+    @existing_order ||= Order.find_by(idempotency_key: @idempotency_key)
+  end
+
+  def handle_duplicate
+    @order = existing_order
+    @is_duplicate = true
+    @order
+  end
+
+  def handle_deadlock
+    @errors << 'Transaction deadlock detected. Please retry your request.'
+  end
+
   def create_order
+    validate_and_cache_menus
+    build_order_with_items
+    @order.save!
+    @order
+  rescue ActiveRecord::RecordInvalid => e
+    @errors.concat(@order.errors.full_messages) if @order
+    raise
+  end
+
+  def validate_and_cache_menus
     validator = Orders::OrderInputValidator.new(
       table_number: @table_number,
       items: @items,
       order_type: @order_type
     )
     
-    begin
-      validation_result = validator.validate!
-      @menus_cache = validation_result[:menus_cache]
-    rescue ActiveRecord::RecordInvalid
-      # Get errors from validator instance even after exception
-      @errors = validator.errors
-      raise
-    end
-    
+    validation_result = validator.validate!
+    @menus_cache = validation_result[:menus_cache]
+  rescue ActiveRecord::RecordInvalid
+    @errors = validator.errors
+    raise
+  end
+
+  def build_order_with_items
     calculator = OrderCalculationService.new(items_with_menus)
     
     @order = Order.new(
@@ -73,8 +90,6 @@ class OrderCreator
     )
     
     build_order_items(calculator)
-    @order.save!
-    @order
   end
 
   def items_with_menus
@@ -89,14 +104,14 @@ class OrderCreator
   def build_order_items(calculator)
     items_with_menus.each do |item|
       @order.order_items.build(
-        menu_snapshot: create_menu_snapshot(item[:menu]),
+        menu_snapshot: menu_snapshot_for(item[:menu]),
         quantity: item[:quantity],
         subtotal: calculator.item_subtotal(item[:menu], item[:quantity])
       )
     end
   end
 
-  def create_menu_snapshot(menu)
+  def menu_snapshot_for(menu)
     {
       'id' => menu.id,
       'name' => menu.name,

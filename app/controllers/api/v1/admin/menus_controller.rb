@@ -4,18 +4,15 @@ module Api
       class MenusController < ApplicationController
         before_action :set_menu, only: [:show, :update, :destroy]
 
-        # GET /api/v1/admin/menus
         def index
           @menus = Menu.all
           render json: @menus
         end
 
-        # GET /api/v1/admin/menus/:id
         def show
           render json: @menu
         end
 
-        # POST /api/v1/admin/menus
         def create
           @menu = Menu.new(menu_params)
 
@@ -26,7 +23,6 @@ module Api
           end
         end
 
-        # PATCH/PUT /api/v1/admin/menus/:id
         def update
           if @menu.update(menu_params)
             render json: @menu
@@ -34,14 +30,9 @@ module Api
             render json: { errors: @menu.errors.full_messages }, status: :unprocessable_entity
           end
         rescue ActiveRecord::StaleObjectError
-          # 楽観的ロック: 他のリクエストによって既に更新されている
-          render json: { 
-            error: 'Menu was modified by another request', 
-            code: 'stale_object' 
-          }, status: :conflict
+          render_optimistic_lock_error
         end
 
-        # DELETE /api/v1/admin/menus/:id
         def destroy
           @menu.destroy
           head :no_content
@@ -54,7 +45,14 @@ module Api
         end
 
         def menu_params
-          params.require(:menu).permit(:name, :price, :image_url, :is_available, :category)
+          params.require(:menu).permit(:name, :price, :image_url, :is_available, :category, :lock_version)
+        end
+
+        def render_optimistic_lock_error
+          render json: { 
+            error: 'Menu was modified by another request', 
+            code: 'stale_object' 
+          }, status: :conflict
         end
       end
     end
