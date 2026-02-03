@@ -51,6 +51,7 @@ group :development, :test do
   gem "factory_bot_rails"
   gem "faker"
   gem "pry-rails"
+  gem "rswag-specs"
 end
 
 group :test do
@@ -60,4 +61,6 @@ end
 
 group :development do
   gem "annotate"
+  gem "rswag-api"
+  gem "rswag-ui"
 end

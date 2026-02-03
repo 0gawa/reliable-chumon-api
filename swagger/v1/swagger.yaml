@@ -1,0 +1,667 @@
+---
+openapi: 3.0.1
+info:
+  title: Restaurant Order Management API
+  version: v1
+  description: A production-ready REST API for managing restaurant orders with robust
+    transaction integrity. Provides reliable financial data for external payment systems.
+    Features include idempotent operations, optimistic/pessimistic locking, price
+    snapshots, daily aggregation, and comprehensive order lifecycle management.
+  contact:
+    name: API Support
+    url: https://github.com/0gawa/reliable-chumon-api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  "/api/v1/admin/analytics/daily":
+    get:
+      summary: Get daily sales statistics
+      tags:
+      - Admin - Analytics
+      description: Returns daily sales statistics with optional filtering by date
+        range and menu
+      parameters:
+      - name: start_date
+        in: query
+        format: date
+        required: false
+        description: Start date (defaults to 30 days ago)
+        example: '2026-01-01'
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        format: date
+        required: false
+        description: End date (defaults to today)
+        example: '2026-01-31'
+        schema:
+          type: string
+      - name: menu_id
+        in: query
+        required: false
+        description: Filter by specific menu ID
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: filtered statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/MenuDailyStat"
+  "/api/v1/admin/analytics/summary":
+    get:
+      summary: Get sales summary
+      tags:
+      - Admin - Analytics
+      description: Returns aggregated sales summary for a date range
+      parameters:
+      - name: start_date
+        in: query
+        format: date
+        required: false
+        description: Start date (defaults to 30 days ago)
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        format: date
+        required: false
+        description: End date (defaults to today)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: summary retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  start_date:
+                    type: string
+                    format: date
+                  end_date:
+                    type: string
+                    format: date
+                  total_sales_amount:
+                    type: integer
+                    example: 50000
+                  total_quantity:
+                    type: integer
+                    example: 42
+                  unique_menus_count:
+                    type: integer
+                    example: 5
+                required:
+                - start_date
+                - end_date
+                - total_sales_amount
+                - total_quantity
+                - unique_menus_count
+  "/api/v1/admin/menus":
+    get:
+      summary: List all menus
+      tags:
+      - Admin - Menus
+      description: Returns all menus including unavailable ones
+      responses:
+        '200':
+          description: menus found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Menu"
+    post:
+      summary: Create a menu
+      tags:
+      - Admin - Menus
+      description: Creates a new menu item
+      parameters: []
+      responses:
+        '201':
+          description: menu created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Menu"
+        '422':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menu:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: ハンバーグ
+                    price:
+                      type: integer
+                      example: 1200
+                    category:
+                      type: string
+                      example: メイン
+                    is_available:
+                      type: boolean
+                      example: true
+                    image_url:
+                      type: string
+                      example: https://example.com/menu.jpg
+                      nullable: true
+                  required:
+                  - name
+                  - price
+                  - category
+  "/api/v1/admin/menus/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Menu ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a specific menu
+      tags:
+      - Admin - Menus
+      responses:
+        '200':
+          description: menu found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Menu"
+        '404':
+          description: menu not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+    patch:
+      summary: Update a menu
+      tags:
+      - Admin - Menus
+      description: Returned when lock_version is outdated
+      parameters: []
+      responses:
+        '200':
+          description: menu updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Menu"
+        '409':
+          description: stale object error (optimistic locking)
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menu:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    price:
+                      type: integer
+                    is_available:
+                      type: boolean
+                    category:
+                      type: string
+                    lock_version:
+                      type: integer
+                      description: For optimistic locking
+    delete:
+      summary: Delete a menu
+      tags:
+      - Admin - Menus
+      responses:
+        '204':
+          description: menu deleted
+  "/api/v1/admin/orders":
+    get:
+      summary: List all orders
+      tags:
+      - Admin - Orders
+      description: Returns all orders with optional filtering by table number and
+        status
+      parameters:
+      - name: table_number
+        in: query
+        required: false
+        description: Filter by table number
+        schema:
+          type: string
+      - name: status
+        in: query
+        type: string
+        required: false
+        description: Filter by order status
+        schema:
+          type: string
+          enum:
+          - pending
+          - confirmed
+          - completed
+      responses:
+        '200':
+          description: filtered orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Order"
+  "/api/v1/admin/orders/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Order ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a specific order
+      tags:
+      - Admin - Orders
+      responses:
+        '200':
+          description: order found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '404':
+          description: order not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/api/v1/admin/orders/{id}/status":
+    parameters:
+    - name: id
+      in: path
+      description: Order ID
+      required: true
+      schema:
+        type: integer
+    patch:
+      summary: Update order status
+      tags:
+      - Admin - Orders
+      description: Updates the status of an order (pending → confirmed → completed)
+      parameters: []
+      responses:
+        '200':
+          description: status updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '422':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      enum:
+                      - pending
+                      - confirmed
+                      - completed
+                      example: confirmed
+                  required:
+                  - status
+  "/api/v1/customer/menus":
+    get:
+      summary: List available menus for customers
+      tags:
+      - Customer - Menus
+      description: Returns a list of available menus ordered by category and name.
+        Only shows menus where is_available is true.
+      responses:
+        '200':
+          description: menus found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Menu"
+  "/api/v1/customer/menus/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Menu ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a specific available menu
+      tags:
+      - Customer - Menus
+      description: Returns 404 if menu exists but is not available
+      responses:
+        '200':
+          description: menu found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Menu"
+        '404':
+          description: menu not available
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/api/v1/customer/orders":
+    post:
+      summary: Create a new order
+      tags:
+      - Customer - Orders
+      description: 'Currently returns 201 for duplicate requests. Future improvement:
+        return 200 with existing order.'
+      parameters:
+      - name: X-Idempotency-Key
+        in: header
+        type: string
+        required: false
+        description: UUID v4 format idempotency key to prevent duplicate orders
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '201':
+          description: 'duplicate request detected (note: currently returns 201, should
+            return 200 in future)'
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '422':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: object
+                  properties:
+                    table_number:
+                      type: string
+                      example: A-1
+                    order_type:
+                      type: string
+                      enum:
+                      - dine_in
+                      - takeout
+                      - delivery
+                      example: dine_in
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          menu_id:
+                            type: integer
+                            example: 1
+                          quantity:
+                            type: integer
+                            example: 2
+                        required:
+                        - menu_id
+                        - quantity
+                  required:
+                  - items
+              required:
+              - order
+  "/api/v1/customer/orders/{id}/summary":
+    parameters:
+    - name: id
+      in: path
+      description: Order ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieve order summary
+      tags:
+      - Customer - Orders
+      description: Returns complete order details including all order items
+      responses:
+        '200':
+          description: order found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Order"
+        '404':
+          description: order not found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+servers:
+- url: http://localhost:3000
+  description: Development server
+- url: https://{environment}.example.com
+  variables:
+    environment:
+      default: api
+      enum:
+      - api
+      - staging
+  description: Production servers
+components:
+  schemas:
+    Menu:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: ハンバーグ
+        price:
+          type: integer
+          example: 1200
+        category:
+          type: string
+          example: メイン
+        is_available:
+          type: boolean
+          example: true
+        image_url:
+          type: string
+          nullable: true
+          example: https://example.com/menu1.jpg
+        lock_version:
+          type: integer
+          example: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - price
+      - category
+      - is_available
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        menu_id:
+          type: integer
+          example: 1
+        quantity:
+          type: integer
+          example: 2
+        unit_price:
+          type: integer
+          example: 1200
+        subtotal:
+          type: integer
+          example: 2400
+        menu_snapshot:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            price:
+              type: integer
+            category:
+              type: string
+      required:
+      - menu_id
+      - quantity
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        table_number:
+          type: string
+          example: A-1
+          nullable: true
+        order_type:
+          type: string
+          enum:
+          - dine_in
+          - takeout
+          - delivery
+          example: dine_in
+        total_amount:
+          type: integer
+          example: 2640
+        tax_amount:
+          type: integer
+          example: 240
+        status:
+          type: string
+          enum:
+          - pending
+          - confirmed
+          - completed
+          example: pending
+        ordered_at:
+          type: string
+          format: date-time
+        idempotency_key:
+          type: string
+          format: uuid
+          nullable: true
+        order_items:
+          type: array
+          items:
+            "$ref": "#/components/schemas/OrderItem"
+      required:
+      - id
+      - order_type
+      - total_amount
+      - tax_amount
+      - status
+    MenuDailyStat:
+      type: object
+      properties:
+        id:
+          type: integer
+        menu_id:
+          type: integer
+        target_date:
+          type: string
+          format: date
+        total_quantity:
+          type: integer
+          example: 15
+        total_sales_amount:
+          type: integer
+          example: 18000
+        menu:
+          "$ref": "#/components/schemas/Menu"
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            status:
+              type: integer
+              example: 404
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: Resource not found
+            details:
+              type: object
+            timestamp:
+              type: string
+              format: date-time
+          required:
+          - status
+          - code
+          - message
+          - timestamp
+tags:
+- name: Customer - Menus
+  description: Customer-facing menu operations
+- name: Customer - Orders
+  description: Customer-facing order operations
+- name: Admin - Menus
+  description: Admin menu management
+- name: Admin - Orders
+  description: Admin order management
+- name: Admin - Analytics
+  description: Sales analytics and reporting
