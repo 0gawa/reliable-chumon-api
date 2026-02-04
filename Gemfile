@@ -46,13 +46,17 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 
+
   # Testing framework
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "faker"
   gem "pry-rails"
   gem "rswag-specs"
+  gem "rswag-api"
+  gem "rswag-ui"
 end
+
 
 group :test do
   gem "shoulda-matchers"
@@ -61,6 +65,4 @@ end
 
 group :development do
   gem "annotate"
-  gem "rswag-api"
-  gem "rswag-ui"
 end
