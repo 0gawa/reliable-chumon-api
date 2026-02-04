@@ -133,11 +133,28 @@ docker-compose exec web rspec spec/integration
 
 ## 📈 Benchmarks
 
-| Operation | Scale | Performance |
-|-----------|-------|-------------|
-| Order Creation | Complex | ~45ms response time |
-| Stats Aggregation | 1,000 orders | < 15ms (Single Query) |
-| Bulk Import | 100 items | < 20ms |
+
+| Operation | Scale | Performance | Note |
+|-----------|-------|-------------|------|
+| Order Creation | Complex | ~45ms | Including tax calculation & snapshots |
+| Daily Aggregation | 1,000 orders | < 15ms | SQL-based bulk upsert |
+| Bulk Import | 100 items | < 20ms | PostgreSQL optimized |
+
+
+
+## ❓ FAQ
+
+**Q: Does this API include user authentication?**
+A: No. It is designed to be seated behind an API Gateway or Reverse Proxy (like Kong or AWS API Gateway) which handles authentication and authorization.
+
+**Q: Does it handle actual payment processing (Stripe, etc.)?**
+A: No. This API focuses on order lifecycle management and financial accuracy. It provides the reliable data needed by payment providers but doesn't interact with them directly.
+
+**Q: Is it suitable for high-traffic environments?**
+A: Yes. It includes rate limiting, database optimizations (bulk upserts, indexing), and concurrency control (locking) to handle production loads.
+
+**Q: Why use integer-based arithmetic for prices?**
+A: Floating-point arithmetic can lead to rounding errors in financial calculations (e.g., 0.1 + 0.2 != 0.3). Using integers (representing the smallest currency unit) ensures 100% precision.
 
 ## 🤝 Contributing
 
