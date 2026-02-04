@@ -32,9 +32,11 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
-.agent/
-/context/
-/docs/
+
+# .agent/
+# /context/
+# /docs/
+
 
 # Antigravity artifacts (AI assistant working directory)
 .gemini/
