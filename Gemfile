@@ -15,7 +15,7 @@ gem "rack-attack"
 gem "redis", "~> 5.0"
 
 # Background job processing
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.1"
 gem "sidekiq-cron", "~> 1.12"
 
 # Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
