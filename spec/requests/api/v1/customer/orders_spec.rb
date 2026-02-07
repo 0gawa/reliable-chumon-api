@@ -250,7 +250,7 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
         params = {
           order: {
             table_number: 'A-1',
-            items: [ { menu_id: menu1.id, quantity: 1000 } ]
+            items: [ { menu_id: menu1.id, quantity: 100 } ]
           }
         }
 
@@ -258,10 +258,10 @@ RSpec.describe 'Api::V1::Customer::Orders', type: :request do
 
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
-        # 1000 * 1000 = 1,000,000
-        # 税: 100,000
-        # 合計: 1,100,000
-        expect(json['total_amount']).to eq(1_100_000)
+        # 100 * 1000 = 100,000
+        # 税: 10,000
+        # 合計: 110,000
+        expect(json['total_amount']).to eq(110_000)
       end
     end
   end

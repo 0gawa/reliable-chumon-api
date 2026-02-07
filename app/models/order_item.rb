@@ -2,7 +2,7 @@ class OrderItem < ApplicationRecord
   belongs_to :order
 
   validates :menu_snapshot, presence: true
-  validates :quantity, presence: true, numericality: { only_integer: true, greater_than: 0 }
+  validates :quantity, presence: true, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: 100 }
   validates :subtotal, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   def menu_name

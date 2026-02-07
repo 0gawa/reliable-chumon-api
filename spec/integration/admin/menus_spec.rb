@@ -135,7 +135,7 @@ RSpec.describe 'Admin Menus API', type: :request do
 
         let!(:menu_record) { create(:menu, name: 'Original Name') }
         let(:id) { menu_record.id }
-        let(:menu) { { menu: { name: 'Updated Name' } } }
+        let(:menu) { { menu: { name: 'Updated Name', lock_version: menu_record.lock_version } } }
 
         run_test! do |response|
           data = JSON.parse(response.body)

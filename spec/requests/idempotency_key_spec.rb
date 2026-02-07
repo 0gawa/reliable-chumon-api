@@ -74,6 +74,31 @@ RSpec.describe '冪等性キー (Idempotency Key)', type: :request do
       end
     end
 
+    context '異なるパラメータで同じ冪等性キーを使用した場合' do
+      it '422 Unprocessable Entityを返す（またはポリシーにより409 Conflict）' do
+        # 1回目のリクエスト（成功）
+        post '/api/v1/customer/orders',
+             params: order_params,
+             headers: { 'X-Idempotency-Key' => valid_uuid },
+             as: :json
+        expect(response).to have_http_status(:created)
+
+        # 2回目のリクエスト（異なるパラメータ）
+        different_params = order_params.deep_dup
+        different_params[:order][:table_number] = 'B-2'
+
+        post '/api/v1/customer/orders',
+             params: different_params,
+             headers: { 'X-Idempotency-Key' => valid_uuid },
+             as: :json
+
+        # 実装によっては409 Conflictや422 Unprocessable Entityを返す
+        expect(response.status).to be_in([409, 422])
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']['code']).to eq('IDEMPOTENCY_KEY_MISMATCH')
+      end
+    end
+
     context '無効なUUID形式' do
       it 'UUID v4形式でない場合は注文作成に失敗する' do
         invalid_uuid = 'not-a-valid-uuid'
@@ -87,7 +112,7 @@ RSpec.describe '冪等性キー (Idempotency Key)', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
- expect(json_response['error']['code']).to eq('VALIDATION_ERROR')
+        expect(json_response['error']['code']).to eq('VALIDATION_ERROR')
       end
     end
   end

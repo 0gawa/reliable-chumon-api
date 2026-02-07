@@ -31,10 +31,25 @@ class OrderCreator
     @is_duplicate
   end
 
+  def idempotency_mismatch?
+    @idempotency_mismatch
+  end
+
   private
 
   def duplicate_exists?
-    idempotency_checker.duplicate_exists?
+    return false unless idempotency_checker.duplicate_exists?
+
+    if idempotency_checker.params_match?(
+      table_number: @table_number,
+      order_type: @order_type,
+      items: @items
+    )
+      true
+    else
+      @idempotency_mismatch = true
+      false
+    end
   end
 
   def idempotency_checker

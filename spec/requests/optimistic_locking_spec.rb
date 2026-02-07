@@ -29,13 +29,37 @@ RSpec.describe '楽観的ロック (Optimistic Locking)', type: :request do
 
     it '正しいlock_versionで更新すると成功する' do
       patch "/api/v1/admin/menus/#{menu.id}",
-            params: { menu: { name: 'New Name' } },
+            params: { menu: { name: 'New Name', lock_version: menu.lock_version } },
             as: :json
 
       expect(response).to have_http_status(:ok)
       menu.reload
       expect(menu.name).to eq('New Name')
       expect(menu.lock_version).to eq(1)
+    end
+
+    context 'lock_versionが欠落している場合' do
+      it '更新が拒否される（またはエラーになる）' do
+        patch "/api/v1/admin/menus/#{menu.id}",
+              params: { menu: { name: 'No Lock Version' } },
+              as: :json
+
+        # 実装方針によるが、StaleObjectErrorを防ぐために必須とするのが一般的
+        # ここでは422または400を期待
+        expect(response.status).to be_in([400, 422])
+        json_response = JSON.parse(response.body)
+        expect(json_response['error']['code']).to eq('MISSING_LOCK_VERSION')
+      end
+    end
+
+    context 'lock_versionが無効な場合' do
+      it 'エラーを返す' do
+        patch "/api/v1/admin/menus/#{menu.id}",
+              params: { menu: { name: 'Invalid Lock Version' }, lock_version: 'invalid' },
+              as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
     end
   end
 end

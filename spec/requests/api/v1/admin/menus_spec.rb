@@ -71,14 +71,14 @@ RSpec.describe 'Api::V1::Admin::Menus', type: :request do
 
     context '有効なパラメータの場合' do
       it 'メニューが更新されること' do
-        patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { name: '新しい名前' } }, as: :json
+        patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { name: '新しい名前', lock_version: menu.lock_version } }, as: :json
 
         expect(response).to have_http_status(:ok)
         expect(menu.reload.name).to eq('新しい名前')
       end
 
       it 'is_availableフラグを切り替えられること' do
-        patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { is_available: false } }, as: :json
+        patch "/api/v1/admin/menus/#{menu.id}", params: { menu: { is_available: false, lock_version: menu.lock_version } }, as: :json
 
         expect(response).to have_http_status(:ok)
         expect(menu.reload.is_available).to be false

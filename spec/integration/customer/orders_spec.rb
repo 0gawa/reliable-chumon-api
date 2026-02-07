@@ -91,6 +91,7 @@ RSpec.describe 'Customer Orders API', type: :request do
 
       response '422', 'validation error' do
         schema '$ref' => '#/components/schemas/Error'
+        let!(:menu) { create(:menu, is_available: true) }
 
         context 'when menu is not available' do
           let!(:menu) { create(:menu, is_available: false) }
@@ -138,6 +139,52 @@ RSpec.describe 'Customer Orders API', type: :request do
             expect(data['error']['code']).to eq('VALIDATION_ERROR')
             expect(data['error']['details']['errors']).to include('注文アイテムが指定されていません')
           end
+        end
+
+        context 'when quantity is invalid' do
+          let(:order) do
+            {
+              order: {
+                items: [ { menu_id: menu.id, quantity: 0 } ]
+              }
+            }
+          end
+
+          run_test! do |response|
+             data = JSON.parse(response.body)
+             expect(data['error']['code']).to eq('VALIDATION_ERROR')
+          end
+        end
+
+        context 'when quantity is too large' do
+           let(:order) do
+             {
+               order: {
+                 items: [ { menu_id: menu.id, quantity: 101 } ]
+               }
+             }
+           end
+
+           run_test! do |response|
+              data = JSON.parse(response.body)
+              expect(data['error']['code']).to eq('VALIDATION_ERROR')
+           end
+        end
+
+        context 'when order_type is invalid' do
+           let(:order) do
+             {
+               order: {
+                 order_type: 'invalid_type',
+                 items: [ { menu_id: menu.id, quantity: 1 } ]
+               }
+             }
+           end
+
+           run_test! do |response|
+              data = JSON.parse(response.body)
+              expect(data['error']['code']).to eq('VALIDATION_ERROR')
+           end
         end
       end
     end

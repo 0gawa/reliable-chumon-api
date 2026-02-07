@@ -24,11 +24,26 @@ module Api
         end
 
         def update
+          if params.dig(:menu, :lock_version).blank?
+            render_custom_error(
+              status: :unprocessable_entity,
+              code: 'MISSING_LOCK_VERSION',
+              message: 'lock_version is required for updating menu'
+            )
+            return
+          end
+
           if @menu.update(menu_params)
             render json: @menu.as_json
           else
             raise ActiveRecord::RecordInvalid.new(@menu)
           end
+        rescue ActiveRecord::StaleObjectError
+          render_custom_error(
+            status: :conflict,
+            code: 'STALE_OBJECT',
+            message: 'The menu has been modified by another request'
+          )
         end
 
         def destroy

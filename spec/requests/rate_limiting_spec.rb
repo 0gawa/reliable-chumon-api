@@ -76,6 +76,34 @@ RSpec.describe 'Rate Limiting', type: :request do
     end
   end
 
+  describe 'IPアドレスによる識別' do
+    it '異なるIPアドレスからのリクエストは別々にカウントされる', :skip_in_ci do
+      # IP1からのリクエスト
+      limit = 30
+      limit.times do |i|
+        post '/api/v1/customer/orders',
+             params: { table_number: "A-#{i}", order_type: 'dine_in', items: [{ menu_id: menu.id, quantity: 1 }] },
+             headers: { 'REMOTE_ADDR' => '1.2.3.4' },
+             as: :json
+        expect(response.status).to be_in([200, 201, 422])
+      end
+
+      # IP1は制限にかかるはず
+      post '/api/v1/customer/orders',
+           params: { table_number: "A-99", order_type: 'dine_in', items: [{ menu_id: menu.id, quantity: 1 }] },
+           headers: { 'REMOTE_ADDR' => '1.2.3.4' },
+           as: :json
+      expect(response).to have_http_status(:too_many_requests)
+
+      # IP2からのリクエストは成功するはず
+      post '/api/v1/customer/orders',
+           params: { table_number: "B-1", order_type: 'dine_in', items: [{ menu_id: menu.id, quantity: 1 }] },
+           headers: { 'REMOTE_ADDR' => '5.6.7.8' },
+           as: :json
+      expect(response).to have_http_status(:created)
+    end
+  end
+
   describe 'レート制限時のレスポンス' do
     it '429エラーは適切なJSONレスポンスを返す', :skip_in_ci do
       # 制限を超える数のリクエストを送信
