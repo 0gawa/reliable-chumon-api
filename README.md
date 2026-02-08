@@ -3,7 +3,7 @@
 [![Ruby](https://img.shields.io/badge/Ruby-3.2.2-red.svg)](https://www.ruby-lang.org/)
 [![Rails](https://img.shields.io/badge/Rails-7.2.3-red.svg)](https://rubyonrails.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-[![RSpec](https://img.shields.io/badge/Tests-144%20passing-green.svg)](https://rspec.info/)
+[![RSpec](https://img.shields.io/badge/Tests-179%20passing-green.svg)](https://rspec.info/)
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0.1-brightgreen.svg)](swagger/v1/swagger.yaml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -119,18 +119,6 @@ Configured via `rack-attack`:
 - **Requests**: 100 requests per minute per IP.
 - **Exceeding**: Returns `429 Too Many Requests`.
 
-## 🧪 Testing
-
-We value quality. The project maintains **144 examples with 0 failures**.
-
-```bash
-# Run all tests
-docker-compose exec web rspec
-
-# Run specific integration tests
-docker-compose exec web rspec spec/integration
-```
-
 ## 📈 Benchmarks
 
 
@@ -155,6 +143,9 @@ A: Yes. It includes rate limiting, database optimizations (bulk upserts, indexin
 
 **Q: Why use integer-based arithmetic for prices?**
 A: Floating-point arithmetic can lead to rounding errors in financial calculations (e.g., 0.1 + 0.2 != 0.3). Using integers (representing the smallest currency unit) ensures 100% precision.
+
+**Q: Does this API support multiple currencies?**
+A: No. Version 1.0.0 is specifically designed for the Japanese market and only supports Japanese Yen (JPY). The tax logic, including 10% consumption tax and specific rounding rules, is also implemented according to Japanese tax regulations.
 
 ## 🤝 Contributing
 
